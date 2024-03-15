@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fluxxmessanger/Pages/auth/loginpage.dart';
 import 'package:fluxxmessanger/Pages/auth/signuppage.dart';
 // Import Google Fonts package
 import 'package:fluxxmessanger/Pages/homepage.dart';
@@ -61,6 +62,6 @@ class _LandingPageState extends State<LandingPage> {
 
   @override
   Widget build(BuildContext context) {
-    return isAuthenticated ? const HomePage() : const SignUpPage();
+    return isAuthenticated ? const HomePage() : const LogInPage();
   }
 }
