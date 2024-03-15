@@ -1,6 +1,9 @@
-import 'dart:io';
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -10,10 +13,19 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-  File? _profileImage;
+  String? _profileImage;
+  String? userName;
+  String? phone;
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneNumberController = TextEditingController();
   final TextEditingController _bioController = TextEditingController();
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    displayImageFromSharedPreferences();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -100,15 +112,17 @@ class _SettingsPageState extends State<SettingsPage> {
                                 color: Colors.grey[300], // Placeholder color
                                 borderRadius: BorderRadius.circular(10),
                                 // Replace with user's profile picture
-                                image: DecorationImage(
-                                  image: _profileImage != null &&
-                                          File(_profileImage!.path).existsSync()
-                                      ? FileImage(File(_profileImage!.path))
-                                          as ImageProvider<Object>
-                                      : const AssetImage('assets/profile_picture.jpg')
-                                          as ImageProvider<Object>,
-                                  fit: BoxFit.cover,
-                                ),
+                                image: _profileImage != null
+                                    ? DecorationImage(
+                                        image: MemoryImage(
+                                            base64Decode(_profileImage!)),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : const DecorationImage(
+                                        image: AssetImage(
+                                            'assets/profile_picture.jpg'),
+                                        fit: BoxFit.cover,
+                                      ),
                               ),
                             ),
                             const SizedBox(width: 20),
@@ -120,8 +134,8 @@ class _SettingsPageState extends State<SettingsPage> {
                                     //apply preffered function
                                   },
                                   child: Text(
-                                    _nameController.text.isNotEmpty
-                                        ? _nameController.text
+                                    userName != null
+                                        ? userName!
                                         : 'User Name', // Replace with user's name
                                     style: const TextStyle(
                                       fontSize: 20,
@@ -135,8 +149,8 @@ class _SettingsPageState extends State<SettingsPage> {
                                     //apply preffered function
                                   },
                                   child: Text(
-                                    _phoneNumberController.text.isNotEmpty
-                                        ? _phoneNumberController.text
+                                    phone != null
+                                        ? phone!
                                         : '+91 0123456789', // Replace with user's Phone
                                     style: const TextStyle(
                                       color: Color.fromARGB(255, 66, 66, 66),
@@ -213,15 +227,60 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _getImageFromGallery() async {
     final picker = ImagePicker();
-    // ignore: deprecated_member_use
-    final pickedFile = await picker.getImage(source: ImageSource.gallery);
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
-      File imageFile = File(pickedFile.path);
+      final imageBytes = await pickedFile.readAsBytes();
       setState(() {
-        _profileImage = imageFile;
+        _profileImage = base64Encode(imageBytes);
       });
+      _uploadImage(imageBytes);
     } else {
       // User canceled the picker
+    }
+  }
+
+  void displayImageFromSharedPreferences() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? base64Image = prefs.getString("profilePhoto");
+
+    if (base64Image != null) {
+      setState(() {
+        _profileImage = base64Image;
+        userName = prefs.getString('userName');
+        phone = prefs.getString('phone');
+      });
+    }
+  }
+
+  Future<void> _uploadImage(Uint8List imageBytes) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String userID = prefs.getString('_id')!;
+
+    final uri =
+        Uri.parse('https://chat-backend-22si.onrender.com/upload-image');
+
+    Map<String, dynamic> requestBody = {
+      'userID': userID,
+      'imageData': base64Encode(imageBytes),
+    };
+
+    try {
+      final response = await http.post(
+        uri,
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(requestBody),
+      );
+
+      if (response.statusCode == 200) {
+        prefs.setString("profilePhoto", base64Encode(imageBytes));
+        print('Image uploaded successfully.');
+      } else {
+        print('Failed to upload image: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error uploading image: $e');
     }
   }
 
@@ -317,8 +376,7 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   void showChangePhoneNumberDialog(BuildContext context) {
-    final TextEditingController phoneNumberController =
-        TextEditingController();
+    final TextEditingController phoneNumberController = TextEditingController();
     String selectedCountryCode = '+91'; // Default country code
 
     showDialog(

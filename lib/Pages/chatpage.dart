@@ -9,9 +9,14 @@ import 'package:http/http.dart' as http;
 class ChatPage extends StatefulWidget {
   final String userName;
   final String receiverID;
+  final String profilePicture;
   // final String imageURL;
 
-  const ChatPage({Key? key, required this.userName, required this.receiverID})
+  const ChatPage(
+      {Key? key,
+      required this.userName,
+      required this.receiverID,
+      required this.profilePicture})
       : super(key: key);
 
   @override
@@ -28,7 +33,7 @@ class _ChatPageState extends State<ChatPage> {
   Future<List<dynamic>> _fetchMessages(String id1, String id2) async {
     final response = await http.get(
         Uri.parse('https://chat-backend-22si.onrender.com/messages/$id1/$id2'));
-    print(response.body);
+    // print(response.body);
     if (response.statusCode == 200) {
       // If the server returns a 200 OK response, parse the JSON
       final jsonData = jsonDecode(response.body);
@@ -44,14 +49,16 @@ class _ChatPageState extends State<ChatPage> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     senderID = prefs.getString('_id')!;
     final messages = await _fetchMessages(senderID, receiverID);
-    setState(() {
-      _messages = messages;
-    });
+    if (messages.length != _messages.length) {
+      setState(() {
+        _messages = messages;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    String userName = widget.userName;
+    // print(profilePicture);
     receiverID = widget.receiverID;
     setMessages();
 
@@ -67,19 +74,32 @@ class _ChatPageState extends State<ChatPage> {
         title: Row(
           children: [
             Container(
+              height: 40,
+              width: 40,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 2),
+                image: widget.profilePicture != 'null'
+                    ? DecorationImage(
+                        image: MemoryImage(base64Decode(widget.profilePicture)),
+                        fit: BoxFit.cover,
+                      )
+                    : const DecorationImage(
+                        image: AssetImage('assets/profile_picture.jpg'),
+                        fit: BoxFit.cover,
+                      ),
               ),
-              child: const CircleAvatar(
-                // backgroundImage: AssetImage('assets/profile_image.png'),
-                radius: 20,
-                child: Icon(Icons.person),
-              ),
+              child: widget.profilePicture == 'null'
+                  ? const CircleAvatar(
+                      // backgroundImage: AssetImage('assets/profile_image.png'),
+                      radius: 20,
+                      child: Icon(Icons.person),
+                    )
+                  : null,
             ),
             const SizedBox(width: 8),
             Text(
-              userName,
+              widget.userName,
               style: const TextStyle(fontSize: 17),
             ),
             const Spacer(),

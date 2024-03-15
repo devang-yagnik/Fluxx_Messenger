@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Import for accessing clipboard
 import 'package:fluxxmessanger/Pages/TNCpage.dart';
@@ -8,7 +7,6 @@ import 'package:fluxxmessanger/Pages/chatpage.dart';
 import 'package:fluxxmessanger/Pages/premiumpage.dart';
 import 'package:fluxxmessanger/Pages/settingspage.dart';
 import 'package:fluxxmessanger/main.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:contacts_service/contacts_service.dart';
 import 'package:http/http.dart' as http;
@@ -23,32 +21,21 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  File? _profileImage;
+  String? _profileImage;
   String userName = 'Unknown';
 
-  void getName() async {
+  void getUser() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String user = prefs.getString('userName')!;
-    // print(prefs);
     setState(() {
-      userName = user;
+      userName = prefs.getString('userName')!;
+      _profileImage = prefs.getString("profilePhoto");
     });
   }
 
   @override
   void initState() {
     super.initState();
-    getName();
-  }
-
-  Future<void> _getImageFromGallery() async {
-    final picker = ImagePicker();
-    final pickedImage = await picker.pickImage(source: ImageSource.gallery);
-    if (pickedImage != null) {
-      setState(() {
-        _profileImage = File(pickedImage.path);
-      });
-    }
+    getUser();
   }
 
   Future<List<dynamic>> _fetchUserData() async {
@@ -195,10 +182,15 @@ class _HomePageState extends State<HomePage> {
                               borderRadius: BorderRadius.circular(10),
                               image: _profileImage != null
                                   ? DecorationImage(
-                                      image: FileImage(_profileImage!),
+                                      image: MemoryImage(
+                                          base64Decode(_profileImage!)),
                                       fit: BoxFit.cover,
                                     )
-                                  : null,
+                                  : const DecorationImage(
+                                      image: AssetImage(
+                                          'assets/profile_picture.jpg'),
+                                      fit: BoxFit.cover,
+                                    ),
                             ),
                             child: _profileImage == null
                                 ? const Center(
@@ -318,7 +310,7 @@ class _HomePageState extends State<HomePage> {
                         SharedPreferences prefs = await SharedPreferences
                             .getInstance(); // Handle settings
                         prefs.clear();
-                        Navigator.push(
+                        Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
                               builder: (context) =>
@@ -392,13 +384,27 @@ class _HomePageState extends State<HomePage> {
                                       decoration: BoxDecoration(
                                         color: Colors.white,
                                         borderRadius: BorderRadius.circular(10),
+                                        image: user['profilePicture'] != null
+                                            ? DecorationImage(
+                                                image: MemoryImage(base64Decode(
+                                                    user['profilePicture']!)),
+                                                fit: BoxFit.cover,
+                                              )
+                                            : const DecorationImage(
+                                                image: AssetImage(
+                                                    'assets/profile_picture.jpg'),
+                                                fit: BoxFit.cover,
+                                              ),
                                       ),
-                                      child: Icon(
-                                        NetworkImage(user['profilePicture'])
-                                            as IconData,
-                                        size: 60,
-                                        color: Colors.grey,
-                                      ),
+                                      child: user['profilePicture'] == null
+                                          ? const Center(
+                                              child: Icon(
+                                                Icons.person,
+                                                size: 50,
+                                                color: Colors.grey,
+                                              ),
+                                            )
+                                          : null,
                                     ),
                                     const SizedBox(height: 10),
                                     Text(
@@ -422,11 +428,28 @@ class _HomePageState extends State<HomePage> {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(10),
+                          image: user['profilePicture'] != null
+                              ? DecorationImage(
+                                  image: MemoryImage(
+                                      base64Decode(user['profilePicture']!)),
+                                  fit: BoxFit.cover,
+                                )
+                              : const DecorationImage(
+                                  image:
+                                      AssetImage('assets/profile_picture.jpg'),
+                                  fit: BoxFit.cover,
+                                ),
                         ),
-                        child: const Icon(
-                          Icons.person,
-                          size: 40,
-                        ),
+                        child: user['profilePicture'] == null
+                            ? const Center(
+                                child: Icon(
+                                  Icons.person,
+                                  size: 50,
+                                  color: Colors.grey,
+                                ),
+                              )
+                            : null,
+
                         // child: ClipRRect(
                         //   borderRadius: BorderRadius.circular(10),
                         //   child: Image.network(
@@ -449,8 +472,10 @@ class _HomePageState extends State<HomePage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) =>
-                              ChatPage(userName: user['username'].toString(), receiverID: user['_id'].toString()),
+                          builder: (context) => ChatPage(
+                              userName: user['username'].toString(),
+                              profilePicture: user['profilePicture'].toString(),
+                              receiverID: user['_id'].toString()),
                         ),
                       );
                     },
@@ -490,7 +515,7 @@ class CreateGroupPage extends StatelessWidget {
         future: contactsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
+            return const Center(
               child:
                   CircularProgressIndicator(), // Loader while contacts are being fetched
             );
@@ -523,8 +548,10 @@ class CreateGroupPage extends StatelessWidget {
                           context,
                           MaterialPageRoute(
                             builder: (context) => ChatPage(
-                                userName: contact.displayName ?? 'Unknown', receiverID: 'null',),
-                                
+                              userName: contact.displayName ?? 'Unknown',
+                              receiverID: 'null',
+                              profilePicture: 'null',
+                            ),
                           ));
                       // Handle contact tap
                     },
@@ -533,7 +560,7 @@ class CreateGroupPage extends StatelessWidget {
               },
             );
           } else {
-            return Center(
+            return const Center(
               child: Text('No contacts found.'),
             );
           }
@@ -541,10 +568,4 @@ class CreateGroupPage extends StatelessWidget {
       ),
     );
   }
-}
-
-void main() {
-  runApp(const MaterialApp(
-    home: HomePage(),
-  ));
 }

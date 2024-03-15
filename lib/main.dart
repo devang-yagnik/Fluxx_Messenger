@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:fluxxmessanger/Pages/auth/loginpage.dart';
 import 'package:fluxxmessanger/Pages/auth/signuppage.dart';
 // Import Google Fonts package
 import 'package:fluxxmessanger/Pages/homepage.dart';

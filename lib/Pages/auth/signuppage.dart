@@ -3,7 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:fluxxmessanger/Pages/TNCpage.dart';
 import 'package:fluxxmessanger/Pages/auth/loginpage.dart';
-import 'package:fluxxmessanger/Pages/homepage.dart'; // Import the HomePage file
+// Import the HomePage file
+import 'package:fluxxmessanger/main.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -55,11 +56,13 @@ class _SignUpPageState extends State<SignUpPage> {
         // Save authentication flag to indicate user is authenticated
         await prefs.setBool('isAuthenticated', true);
         await prefs.setString('userName', user['username']!);
+        await prefs.setString('phone', user['phone']!);
         await prefs.setString('_id', user['_id']!);
+        await prefs.setString('profilePhoto', user['profilePicture']!);
 
-        Navigator.push(
+        Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomePage()),
+          MaterialPageRoute(builder: (context) => const LandingPage()),
         );
       } else {
         // Handle other status codes (e.g., 404, 500)
