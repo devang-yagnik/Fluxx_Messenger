@@ -4,6 +4,8 @@ import 'package:flutter/services.dart'; // Import for accessing clipboard
 import 'package:fluxxmessanger/Pages/TNCpage.dart';
 import 'package:fluxxmessanger/Pages/aboutuspage.dart';
 import 'package:fluxxmessanger/Pages/chatpage.dart';
+import 'package:fluxxmessanger/Pages/create_group_page.dart';
+import 'package:fluxxmessanger/Pages/group_chat_page.dart';
 import 'package:fluxxmessanger/Pages/premiumpage.dart';
 import 'package:fluxxmessanger/Pages/settingspage.dart';
 import 'package:fluxxmessanger/main.dart';
@@ -21,6 +23,8 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
+      GlobalKey<RefreshIndicatorState>();
   String? _profileImage;
   String userName = 'Unknown';
 
@@ -45,7 +49,7 @@ class _HomePageState extends State<HomePage> {
     if (response.statusCode == 200) {
       // If the server returns a 200 OK response, parse the JSON
       final jsonData = jsonDecode(response.body);
-      final List<dynamic> users = jsonData['users'];
+      final List<dynamic> users = jsonData['all'];
       return users;
     } else {
       // If the server returns an error response, throw an exception
@@ -64,7 +68,7 @@ class _HomePageState extends State<HomePage> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => CreateGroupPage(
+          builder: (context) => ContactsPage(
             contactsFuture: _fetchContacts(),
           ),
         ),
@@ -218,107 +222,112 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
               Expanded(
-                child: Column(
-                  children: [
-                    ListTile(
-                      leading:
-                          const Icon(Icons.group), // Change icon to group icon
-                      title: const Text(
-                          'Start New Group'), // Change text to "Start New Group"
-                      onTap: () {
-                        _requestContactPermission(
-                            context); // Request contact permission
-                      },
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.person_add),
-                      title: const Text('Invite New User'),
-                      onTap: () {
-                        // Handle invite new user
-                        showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return AlertDialog(
-                              title: const Text('Invite New User'),
-                              content: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Text(
-                                      'Let\'s chat on Fluxx! It\'s fast, simple, and secure we can use to message and call each other for free. Get it at https://fluxx.com/dl/'),
-                                  const SizedBox(height: 10),
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      Clipboard.setData(const ClipboardData(
-                                          text:
-                                              'Let\'s chat on Fluxx! It\'s fast, simple, and secure we can use to message and call each other for free. Get it at https://fluxx.com/dl/'));
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(const SnackBar(
-                                        content: Text('Copied to clipboard'),
-                                      ));
-                                    },
-                                    child: const Text('Copy'),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.settings),
-                      title: const Text('Settings'),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) =>
-                                  const SettingsPage()), // Navigate to SettingsPage
-                        ); // Handle settings
-                      },
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.privacy_tip_sharp),
-                      title: const Text('T&C'),
-                      onTap: () {
-                        // Handle settings
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) =>
-                                  const TNCPage()), // Navigate to SettingsPage
-                        );
-                      },
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.info),
-                      title: const Text('About Us'),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) =>
-                                  const AboutUsPage()), // Navigate to SettingsPage
-                        );
-                        // Handle about us
-                      },
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.logout),
-                      title: const Text('LogOut'),
-                      onTap: () async {
-                        SharedPreferences prefs = await SharedPreferences
-                            .getInstance(); // Handle settings
-                        prefs.clear();
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) =>
-                                  const LandingPage()), // Navigate to SettingsPage
-                        );
-                      },
-                    ),
-                  ],
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      ListTile(
+                        leading: const Icon(
+                            Icons.group), // Change icon to group icon
+                        title: const Text(
+                            'Start New Group'), // Change text to "Start New Group"
+                        onTap: () {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      const CreateGroupPage())); // Request contact permission
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.person_add),
+                        title: const Text('Invite New User'),
+                        onTap: () {
+                          // Handle invite new user
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                title: const Text('Invite New User'),
+                                content: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Text(
+                                        'Let\'s chat on Fluxx! It\'s fast, simple, and secure we can use to message and call each other for free. Get it at https://fluxx.com/dl/'),
+                                    const SizedBox(height: 10),
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        Clipboard.setData(const ClipboardData(
+                                            text:
+                                                'Let\'s chat on Fluxx! It\'s fast, simple, and secure we can use to message and call each other for free. Get it at https://fluxx.com/dl/'));
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(const SnackBar(
+                                          content: Text('Copied to clipboard'),
+                                        ));
+                                      },
+                                      child: const Text('Copy'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.settings),
+                        title: const Text('Settings'),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                    const SettingsPage()), // Navigate to SettingsPage
+                          ); // Handle settings
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.privacy_tip_sharp),
+                        title: const Text('T&C'),
+                        onTap: () {
+                          // Handle settings
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                    const TNCPage()), // Navigate to SettingsPage
+                          );
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.info),
+                        title: const Text('About Us'),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                    const AboutUsPage()), // Navigate to SettingsPage
+                          );
+                          // Handle about us
+                        },
+                      ),
+                      ListTile(
+                        leading: const Icon(Icons.logout),
+                        title: const Text('LogOut'),
+                        onTap: () async {
+                          SharedPreferences prefs = await SharedPreferences
+                              .getInstance(); // Handle settings
+                          prefs.clear();
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) =>
+                                    const LandingPage()), // Navigate to SettingsPage
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
               // Footer
@@ -345,145 +354,173 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
-      body: FutureBuilder(
-          future: _fetchUserData(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child:
-                    CircularProgressIndicator(), // Display loading indicator while data is being fetched
-              );
-            } else if (snapshot.hasError) {
-              return Center(
-                child: Text(
-                    'Error: ${snapshot.error}'), // Display error message if fetching data fails
-              );
-            } else {
-              List<dynamic> users = snapshot.data!;
-              return ListView.builder(
-                itemCount:
-                    users.length, // Replace with the actual number of chats
-                itemBuilder: (context, index) {
-                  dynamic user = users[index];
-                  return ListTile(
-                    leading: GestureDetector(
-                      onTap: () {
-                        // Show chat profile picture in mini window
-                        showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return AlertDialog(
-                              content: SingleChildScrollView(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    // Replace with chat's profile image
-                                    Container(
-                                      width: 100,
-                                      height: 100,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(10),
-                                        image: user['profilePicture'] != null
-                                            ? DecorationImage(
-                                                image: MemoryImage(base64Decode(
-                                                    user['profilePicture']!)),
-                                                fit: BoxFit.cover,
+      body: RefreshIndicator(
+        key: _refreshIndicatorKey,
+        onRefresh: () async {
+          await _fetchUserData();
+        },
+        child: FutureBuilder(
+            future: _fetchUserData(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child:
+                      CircularProgressIndicator(), // Display loading indicator while data is being fetched
+                );
+              } else if (snapshot.hasError) {
+                return Center(
+                  child: Text(
+                      'Error: ${snapshot.error}'), // Display error message if fetching data fails
+                );
+              } else {
+                List<dynamic> users = snapshot.data!;
+                return ListView.builder(
+                  itemCount:
+                      users.length, // Replace with the actual number of chats
+                  itemBuilder: (context, index) {
+                    dynamic user = users[index];
+                    return ListTile(
+                      leading: GestureDetector(
+                        onTap: () {
+                          // Show chat profile picture in mini window
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                content: SingleChildScrollView(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.center,
+                                    children: [
+                                      // Replace with chat's profile image
+                                      Container(
+                                        width: 100,
+                                        height: 100,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                          image: user['profilePicture'] != null
+                                              ? DecorationImage(
+                                                  image: MemoryImage(
+                                                      base64Decode(user[
+                                                          'profilePicture']!)),
+                                                  fit: BoxFit.cover,
+                                                )
+                                              : const DecorationImage(
+                                                  image: AssetImage(
+                                                      'assets/profile_picture.jpg'),
+                                                  fit: BoxFit.cover,
+                                                ),
+                                        ),
+                                        child: user['profilePicture'] == null
+                                            ? const Center(
+                                                child: Icon(
+                                                  Icons.person,
+                                                  size: 50,
+                                                  color: Colors.grey,
+                                                ),
                                               )
-                                            : const DecorationImage(
-                                                image: AssetImage(
-                                                    'assets/profile_picture.jpg'),
-                                                fit: BoxFit.cover,
-                                              ),
+                                            : null,
                                       ),
-                                      child: user['profilePicture'] == null
-                                          ? const Center(
-                                              child: Icon(
-                                                Icons.person,
-                                                size: 50,
-                                                color: Colors.grey,
-                                              ),
-                                            )
-                                          : null,
-                                    ),
-                                    const SizedBox(height: 10),
-                                    Text(
-                                      user['username'],
-                                      style: const TextStyle(
-                                        color: Color.fromARGB(255, 0, 0, 0),
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
+                                      const SizedBox(height: 10),
+                                      Text(
+                                        user['username'],
+                                        style: const TextStyle(
+                                          color: Color.fromARGB(255, 0, 0, 0),
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            );
-                          },
-                        );
-                      },
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          image: user['profilePicture'] != null
-                              ? DecorationImage(
-                                  image: MemoryImage(
-                                      base64Decode(user['profilePicture']!)),
-                                  fit: BoxFit.cover,
+                              );
+                            },
+                          );
+                        },
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            image: user['profilePicture'] != null
+                                ? DecorationImage(
+                                    image: MemoryImage(
+                                        base64Decode(user['profilePicture']!)),
+                                    fit: BoxFit.cover,
+                                  )
+                                : const DecorationImage(
+                                    image: AssetImage(
+                                        'assets/profile_picture.jpg'),
+                                    fit: BoxFit.cover,
+                                  ),
+                          ),
+                          child: user['profilePicture'] == null
+                              ? const Center(
+                                  child: Icon(
+                                    Icons.person,
+                                    size: 50,
+                                    color: Colors.grey,
+                                  ),
                                 )
-                              : const DecorationImage(
-                                  image:
-                                      AssetImage('assets/profile_picture.jpg'),
-                                  fit: BoxFit.cover,
-                                ),
-                        ),
-                        child: user['profilePicture'] == null
-                            ? const Center(
-                                child: Icon(
-                                  Icons.person,
-                                  size: 50,
-                                  color: Colors.grey,
-                                ),
-                              )
-                            : null,
+                              : null,
 
-                        // child: ClipRRect(
-                        //   borderRadius: BorderRadius.circular(10),
-                        //   child: Image.network(
-                        //     user['profilePicture'],
-                        //     width: 40,
-                        //     height: 40,
-                        //     fit: BoxFit.cover,
-                        //     color: Colors
-                        //         .grey, // Optional: You can set the color of the image
-                        //     colorBlendMode: BlendMode
-                        //         .color, // Optional: Blend mode for coloring the image
-                        //   ),
-                        // ),
-                      ),
-                    ),
-                    title: Text(user['username']),
-                    subtitle: Text("Last message from ${user['username']}"),
-                    onTap: () {
-                      // Navigate to the chat screen for the selected chat
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ChatPage(
-                              userName: user['username'].toString(),
-                              profilePicture: user['profilePicture'].toString(),
-                              receiverID: user['_id'].toString()),
+                          // child: ClipRRect(
+                          //   borderRadius: BorderRadius.circular(10),
+                          //   child: Image.network(
+                          //     user['profilePicture'],
+                          //     width: 40,
+                          //     height: 40,
+                          //     fit: BoxFit.cover,
+                          //     color: Colors
+                          //         .grey, // Optional: You can set the color of the image
+                          //     colorBlendMode: BlendMode
+                          //         .color, // Optional: Blend mode for coloring the image
+                          //   ),
+                          // ),
                         ),
-                      );
-                    },
-                  );
-                },
-              );
-            }
-          }),
+                      ),
+                      title:
+                          Text(user['username'] ?? user['name'] ?? 'Unknown'),
+                      subtitle: Text(
+                          "Last message from ${user['username'] ?? 'group'}"),
+                      onTap: () {
+                        final dynamic chatItem = users[
+                            index]; // Assuming `users` is your list containing both users and groups
+                        if (chatItem.containsKey('username')) {
+                          // It's a user
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ChatPage(
+                                userName: chatItem['username'].toString(),
+                                profilePicture:
+                                    chatItem['profilePicture'].toString(),
+                                receiverID: chatItem['_id'].toString(),
+                              ),
+                            ),
+                          );
+                        } else if (chatItem.containsKey('name')) {
+                          // It's a group
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => GroupChatPage(
+                                groupId: chatItem['_id'].toString(),
+                                groupName: chatItem['name'].toString(),
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                    );
+                  },
+                );
+              }
+            }),
+      ),
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(right: 5.0, bottom: 5.0), // Add padding
         child: FloatingActionButton(
@@ -497,10 +534,10 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-class CreateGroupPage extends StatelessWidget {
+class ContactsPage extends StatelessWidget {
   final Future<Iterable<Contact>> contactsFuture;
 
-  const CreateGroupPage({Key? key, required this.contactsFuture})
+  const ContactsPage({Key? key, required this.contactsFuture})
       : super(key: key);
 
   @override

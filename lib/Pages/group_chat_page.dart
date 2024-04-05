@@ -1,46 +1,47 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:fluxxmessanger/Pages/callpage.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:vibration/vibration.dart'; // Import the Vibration package
-import 'package:http/http.dart' as http;
 
-class ChatPage extends StatefulWidget {
-  final String userName;
-  final String receiverID;
-  final String profilePicture;
-  // final String imageURL;
+class GroupChatPage extends StatefulWidget {
+  final String groupId;
+  final String groupName;
 
-  const ChatPage(
-      {Key? key,
-      required this.userName,
-      required this.receiverID,
-      required this.profilePicture})
-      : super(key: key);
+  const GroupChatPage({
+    Key? key,
+    required this.groupId,
+    required this.groupName,
+  }) : super(key: key);
 
   @override
-  State<ChatPage> createState() => _ChatPageState();
+  State<GroupChatPage> createState() => _GroupChatPageState();
 }
 
-class _ChatPageState extends State<ChatPage> {
+class _GroupChatPageState extends State<GroupChatPage> {
   final TextEditingController _messageController = TextEditingController();
   final FocusNode _messageFocusNode = FocusNode();
   List<dynamic> _messages = [];
-  String receiverID = '';
   String senderID = '';
 
-  Future<List<dynamic>> _fetchMessages(String id1, String id2) async {
+  @override
+  void initState() {
+    super.initState();
+    setMessages();
+  }
+
+  Future<List<dynamic>> _fetchMessages(String groupId) async {
     final response = await http.get(
-        Uri.parse('https://chat-backend-22si.onrender.com/messages/$id1/$id2'));
-    // print(response.body);
+      Uri.parse(
+          'https://chat-backend-22si.onrender.com/group-messages/$groupId'),
+    );
+    print(response.body);
     if (response.statusCode == 200) {
-      // If the server returns a 200 OK response, parse the JSON
       final jsonData = jsonDecode(response.body);
-      final List<dynamic> messages = jsonData['messages'];
+      final List<dynamic> messages = jsonData['groupMessages'];
       return messages;
     } else {
-      // If the server returns an error response, throw an exception
       throw Exception('Failed to load data');
     }
   }
@@ -48,7 +49,7 @@ class _ChatPageState extends State<ChatPage> {
   void setMessages() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     senderID = prefs.getString('_id')!;
-    final messages = await _fetchMessages(senderID, receiverID);
+    final messages = await _fetchMessages(widget.groupId);
     setState(() {
       _messages = messages;
     });
@@ -56,10 +57,7 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    // print(profilePicture);
-    receiverID = widget.receiverID;
     setMessages();
-
     return Scaffold(
       appBar: AppBar(
         shape: RoundedRectangleBorder(
@@ -71,33 +69,8 @@ class _ChatPageState extends State<ChatPage> {
         titleSpacing: 0,
         title: Row(
           children: [
-            Container(
-              height: 40,
-              width: 40,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
-                image: widget.profilePicture != 'null'
-                    ? DecorationImage(
-                        image: MemoryImage(base64Decode(widget.profilePicture)),
-                        fit: BoxFit.cover,
-                      )
-                    : const DecorationImage(
-                        image: AssetImage('assets/profile_picture.jpg'),
-                        fit: BoxFit.cover,
-                      ),
-              ),
-              child: widget.profilePicture == 'null'
-                  ? const CircleAvatar(
-                      // backgroundImage: AssetImage('assets/profile_image.png'),
-                      radius: 20,
-                      child: Icon(Icons.person),
-                    )
-                  : null,
-            ),
-            const SizedBox(width: 8),
             Text(
-              widget.userName,
+              widget.groupName,
               style: const TextStyle(fontSize: 17),
             ),
             const Spacer(),
@@ -113,6 +86,7 @@ class _ChatPageState extends State<ChatPage> {
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final message = _messages[_messages.length - 1 - index];
+                print(message);
                 return MessageBubble(message: message, myID: senderID);
               },
             ),
@@ -135,8 +109,7 @@ class _ChatPageState extends State<ChatPage> {
                     constraints: BoxConstraints(
                       maxWidth: MediaQuery.of(context).size.width * 0.7,
                     ),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10), // Adjust the padding here
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(15),
                       color: Colors.grey.shade200,
@@ -169,8 +142,7 @@ class _ChatPageState extends State<ChatPage> {
                   onPressed: _sendMessage,
                   style: ElevatedButton.styleFrom(
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                          50), // Adjust the radius as needed
+                      borderRadius: BorderRadius.circular(50),
                     ),
                     padding: const EdgeInsets.all(10),
                   ),
@@ -188,37 +160,16 @@ class _ChatPageState extends State<ChatPage> {
     return PopupMenuButton<String>(
       itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
         const PopupMenuItem<String>(
-          value: 'voice_call',
+          value: 'leave_group',
           child: ListTile(
-            leading: Icon(Icons.phone),
-            title: Text('Voice Call'),
-          ),
-        ),
-        const PopupMenuItem<String>(
-          value: 'video_call',
-          child: ListTile(
-            leading: Icon(Icons.videocam),
-            title: Text('Video Call'),
+            leading: Icon(Icons.exit_to_app),
+            title: Text('Leave Group'),
           ),
         ),
       ],
       onSelected: (String value) {
-        if (value == 'voice_call') {
-          // Navigate to voice call page
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const CallPage(participantName: ''),
-            ),
-          );
-        } else if (value == 'video_call') {
-          // Navigate to video call page
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const CallPage(participantName: ''),
-            ),
-          );
+        if (value == 'leave_group') {
+          // Implement leaving group functionality
         }
       },
       shape: RoundedRectangleBorder(
@@ -242,40 +193,24 @@ class _ChatPageState extends State<ChatPage> {
   void _sendMessage() async {
     final messageText = _messageController.text.trim();
     if (messageText.isNotEmpty) {
-      final response = await addMessage(messageText);
+      final response = await http.post(
+        Uri.parse('https://chat-backend-22si.onrender.com/send-group-message'),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+        body: jsonEncode(<String, String>{
+          'groupID': widget.groupId,
+          'senderID': senderID,
+          'content': messageText,
+        }),
+      );
       if (response.statusCode == 201) {
-        // Message sent successfully
         _messageController.clear();
+        setMessages(); // Refresh messages after sending
       } else {
-        // Error occurred while sending message
-        print('Error sending message: ${response.body}');
-        // Handle error accordingly
+        print('Failed to send group message');
       }
     }
-  }
-
-  Future<http.Response> addMessage(String messageText) async {
-    // final now = DateTime.now();
-    // final formattedTime = '${now.hour}:${now.minute}';
-    final newMessage = {
-      'senderId': senderID,
-      'receiverId': receiverID,
-      'content': messageText, // 'sent', 'delivered', 'read'
-    };
-
-    // Convert the newMessage map to JSON format
-    final jsonData = json.encode(newMessage);
-    print(jsonData);
-    // Make a POST request to the API endpoint to send the message
-    final response = await http.post(
-      Uri.parse('https://chat-backend-22si.onrender.com/send-message'),
-      headers: <String, String>{
-        'Content-Type': 'application/json; charset=UTF-8',
-      },
-      body: jsonData,
-    );
-
-    return response;
   }
 }
 
@@ -289,7 +224,7 @@ class MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String text = message['content'];
-    final String sender = message['senderId'];
+    final String sender = message['senderID'];
     final String time = message['timestamp'];
     final bool isMe = sender == myID;
 

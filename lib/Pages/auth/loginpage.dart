@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:fluxxmessanger/main.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
-import 'package:fluxxmessanger/Pages/homepage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'signuppage.dart'; // Import the signuppage.dart file
@@ -53,7 +52,9 @@ class _LogInPageState extends State<LogInPage> {
         await prefs.setString('userName', user['username']!);
         await prefs.setString('phone', user['phone']!);
         await prefs.setString('_id', user['_id']!);
-        await prefs.setString('profilePhoto', user['profilePicture']!);
+        if(user[''] != null){
+          await prefs.setString('profilePhoto', user['profilePhoto']!);
+        }
 
         Navigator.pushReplacement(
           context,
