@@ -101,7 +101,7 @@ class _ChatPageState extends State<ChatPage> {
               style: const TextStyle(fontSize: 17),
             ),
             const Spacer(),
-            _buildPopupMenuButton(context),
+            _buildPopupMenuButton(context, receiverID),
           ],
         ),
       ),
@@ -184,7 +184,7 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  PopupMenuButton<String> _buildPopupMenuButton(BuildContext context) {
+  PopupMenuButton<String> _buildPopupMenuButton(BuildContext context, String receiverID) {
     return PopupMenuButton<String>(
       itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
         const PopupMenuItem<String>(
@@ -208,7 +208,7 @@ class _ChatPageState extends State<ChatPage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const CallPage(participantName: ''),
+              builder: (context) => CallPage(participantName: '', receiverID: receiverID),
             ),
           );
         } else if (value == 'video_call') {
@@ -216,7 +216,7 @@ class _ChatPageState extends State<ChatPage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const CallPage(participantName: ''),
+              builder: (context) => CallPage(participantName: '', receiverID: receiverID),
             ),
           );
         }

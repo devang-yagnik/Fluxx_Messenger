@@ -242,14 +242,20 @@ class _SettingsPageState extends State<SettingsPage> {
   void displayImageFromSharedPreferences() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? base64Image = prefs.getString("profilePhoto");
-
+    // print(base64Image);
     if (base64Image != null) {
       setState(() {
         _profileImage = base64Image;
         userName = prefs.getString('userName');
         phone = prefs.getString('phone');
       });
+    } else {
+      setState(() {
+        userName = prefs.getString('userName');
+        phone = prefs.getString('phone');
+      });
     }
+    print(prefs.getKeys());
   }
 
   Future<void> _uploadImage(Uint8List imageBytes) async {
